@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="author" content="github.com/jozef-javorsky-dodo" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fullscreen Black Screen - Precision Monitor Tool</title>
+    <meta
+      name="description"
+      content="Activate an instantaneous, pure black fullscreen display. The definitive tool for precise screen inspection and cleaning. Press F or click."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23000%22/></svg>"
+      sizes="any"
+      type="image/svg+xml"
+    />
+    <meta name="theme-color" content="#000000" />
+
+    <style>
+      :root {
+        --bg-color: #000000;
+        --text-color: #e0e0e0;
+        --heading-color: #ffffff;
+        --button-bg: #404040;
+        --button-hover-bg: #505050;
+        --button-active-bg: #303030;
+        --button-text: #ffffff;
+        --button-border: #707070;
+        --focus-ring: #64b5f6;
+        --error-text: #ffcdd2;
+        --error-bg: #b71c1c;
+        --error-border: #e57373;
+        --kbd-bg: #333333;
+        --kbd-text: #eeeeee;
+        --kbd-border: #555555;
+        --transition-duration-fast: 0.1s;
+        --transition-duration-med: 0.2s;
+        --transition-duration-slow: 0.3s;
+        --focus-offset: 3px;
+      }
+
+      :where(html) {
+        box-sizing: border-box;
+        font-size: 16px;
+        overflow: hidden;
+        block-size: 100%;
+        background-color: var(--bg-color);
+        color-scheme: dark;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+
+      :where(*, *::before, *::after) {
+        box-sizing: inherit;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      body {
+        block-size: 100vh;
+        inline-size: 100vw;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji",
+          "Segoe UI Emoji", "Segoe UI Symbol";
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        text-rendering: optimizeLegibility;
+      }
+
+      main {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding-block: clamp(1rem, 5vh, 1.5rem);
+        padding-inline: clamp(1.5rem, 5vw, 2rem);
+        max-inline-size: 600px;
+        transition: opacity var(--transition-duration-med) ease-in-out,
+          visibility 0s linear var(--transition-duration-med);
+        will-change: opacity;
+      }
+
+      h1 {
+        color: var(--heading-color);
+        margin-block-end: 1rem;
+        font-size: clamp(1.5rem, 5vw, 1.9rem);
+        font-weight: 600;
+      }
+
+      p {
+        margin-block: 0.5rem 1rem;
+        font-size: clamp(0.95rem, 2.5vw, 1.05rem);
+        max-inline-size: 55ch;
+      }
+
+      kbd {
+        background-color: var(--kbd-bg);
+        color: var(--kbd-text);
+        padding-block: 0.15em;
+        padding-inline: 0.45em;
+        border-radius: 4px;
+        border: 1px solid var(--kbd-border);
+        font-family: monospace;
+        font-size: 0.9em;
+        white-space: nowrap;
+      }
+
+      #fullscreen-button {
+        padding-block: 0.8rem;
+        padding-inline: 1.6rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        background-color: var(--button-bg);
+        color: var(--button-text);
+        border: 1px solid var(--button-border);
+        border-radius: 6px;
+        margin-block: 0.75rem;
+        transition: background-color var(--transition-duration-med) ease,
+          transform var(--transition-duration-fast) ease,
+          outline-offset var(--transition-duration-fast) ease;
+        user-select: none;
+        min-block-size: 44px;
+        min-inline-size: 44px;
+        appearance: none;
+        touch-action: manipulation;
+      }
+
+      #fullscreen-button:hover:not(:disabled) {
+        background-color: var(--button-hover-bg);
+      }
+
+      #fullscreen-button:focus-visible {
+        outline: 3px solid var(--focus-ring);
+        outline-offset: var(--focus-offset);
+      }
+
+      #fullscreen-button:focus:not(:focus-visible) {
+        outline: none;
+      }
+
+      #fullscreen-button:active:not(:disabled) {
+        background-color: var(--button-active-bg);
+        transform: scale(0.96);
+      }
+
+      #fullscreen-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .user-message {
+        padding-block: 0.6rem;
+        padding-inline: 1rem;
+        border-radius: 4px;
+        margin-block-start: 1rem;
+        font-weight: 500;
+        border: 1px solid transparent;
+        max-inline-size: 90%;
+        font-size: 0.95rem;
+        opacity: 0;
+        transition: opacity var(--transition-duration-slow) ease-out;
+        will-change: opacity;
+      }
+
+      .user-message.visible {
+        opacity: 1;
+      }
+
+      .error-message {
+        color: var(--error-text);
+        background-color: var(--error-bg);
+        border-color: var(--error-border);
+      }
+
+      :is(html, body):fullscreen main {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition-delay: 0s, 0s;
+      }
+
+      :is(html, body):fullscreen {
+        background-color: var(--bg-color) !important;
+      }
+    </style>
+  </head>
+
+  <body>
+    <main id="content-wrapper" aria-live="polite">
+      <h1>Black Screen: Clean your computer screen</h1>
+
+      <button
+        id="fullscreen-button"
+        type="button"
+        aria-label="Activate fullscreen black screen mode"
+      >
+        Click for Fullscreen
+      </button>
+      <p>or press the <kbd>F</kbd> key</p>
+
+      <p>
+        Activate fullscreen mode for a pure black display. Ideal for spotting
+        dust and cleaning your monitor effectively. Press <kbd>Esc</kbd> to
+        exit.
+      </p>
+    </main>
+
+    <script type="module">
+      (() => {
+        "use strict";
+
+        const D = document;
+        const rootElement = D.documentElement;
+        const contentWrapper = D.getElementById("content-wrapper");
+        const fullscreenButton = D.getElementById("fullscreen-button");
+
+        const MESSAGE_TIMEOUT_MS = 5000;
+        const TRANSITION_FALLBACK_MS = 500;
+        const TYPING_ELEMENT_SELECTOR =
+          'input, textarea, [contenteditable="true"], [role="textbox"]';
+
+        if (!contentWrapper || !fullscreenButton) {
+          console.error(
+            "Critical UI elements missing. Application cannot initialize."
+          );
+          return;
+        }
+
+        let messageTimeoutId = null;
+
+        function displayUserMessage(message, isError = false) {
+          clearTimeout(messageTimeoutId);
+          const existingMsg = contentWrapper.querySelector(".user-message");
+          existingMsg?.remove();
+
+          const msgElement = D.createElement("p");
+          msgElement.textContent = message;
+          msgElement.className = `user-message ${
+            isError ? "error-message" : ""
+          }`.trim();
+          msgElement.setAttribute("role", isError ? "alert" : "status");
+
+          contentWrapper.appendChild(msgElement);
+
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              msgElement.classList.add("visible");
+            });
+          });
+
+          messageTimeoutId = setTimeout(() => {
+            msgElement.classList.remove("visible");
+            const handleTransitionEnd = () => msgElement.remove();
+            msgElement.addEventListener("transitionend", handleTransitionEnd, {
+              once: true,
+            });
+            setTimeout(() => msgElement.remove(), TRANSITION_FALLBACK_MS);
+            messageTimeoutId = null;
+          }, MESSAGE_TIMEOUT_MS);
+        }
+
+        function handleFullscreenError(error) {
+          console.error(
+            `Fullscreen API Error: ${error.message} (${error.name})`
+          );
+          displayUserMessage("Could not activate fullscreen mode.", true);
+        }
+
+        async function enterFullscreen() {
+          if (D.fullscreenElement) return;
+          try {
+            await rootElement.requestFullscreen({ navigationUI: "hide" });
+          } catch (error) {
+            handleFullscreenError(error);
+          }
+        }
+
+        async function exitFullscreen() {
+          if (!D.fullscreenElement) return;
+          try {
+            await D.exitFullscreen();
+          } catch (error) {
+            console.error(
+              `Error exiting fullscreen: ${error.message} (${error.name})`
+            );
+          }
+        }
+
+        function toggleFullscreenInteraction() {
+          if (D.fullscreenElement) {
+            exitFullscreen();
+          } else {
+            enterFullscreen();
+          }
+        }
+
+        function handleKeyInteraction(event) {
+          if (event.key.toLowerCase() !== "f" || D.fullscreenElement) return;
+
+          const activeElement = D.activeElement;
+          const isTyping = activeElement?.matches(TYPING_ELEMENT_SELECTOR);
+
+          if (!isTyping) {
+            event.preventDefault();
+            enterFullscreen();
+          }
+        }
+
+        function onFullscreenChange() {
+          if (!D.fullscreenElement && D.body.contains(fullscreenButton)) {
+            requestAnimationFrame(() =>
+              fullscreenButton.focus({ preventScroll: true })
+            );
+          }
+        }
+
+        function initializeApp() {
+          if (!D.fullscreenEnabled) {
+            console.warn(
+              "Fullscreen API is not enabled or supported in this browser."
+            );
+            fullscreenButton.disabled = true;
+            fullscreenButton.setAttribute("aria-disabled", "true");
+            displayUserMessage(
+              "Fullscreen mode is not available on this browser.",
+              true
+            );
+          } else {
+            fullscreenButton.addEventListener(
+              "click",
+              toggleFullscreenInteraction
+            );
+            D.addEventListener("keydown", handleKeyInteraction);
+            D.addEventListener("fullscreenchange", onFullscreenChange);
+          }
+        }
+
+        initializeApp();
+      })();
+    </script>
+  </body>
+</html>
